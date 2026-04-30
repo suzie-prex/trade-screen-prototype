@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Trade Screen — Positions/Orders</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+  :root {
+    --bg0: #111111;
+    --bg1: #1c1c1c;
+    --bg2: #2a2a2a;
+    --bg3: #3a3a3a;
+    --text-p: #eeeeee;
+    --text-s: #b4b4b4;
+    --text-t: #959595;
+    --text-m: #7b7b7b;
+    --positive: #34c759;
+    --negative: #ff453a;
+    --blue: #0a84ff;
+    --border: #2a2a2a;
+    --positive-tint: rgba(52, 199, 89, 0.12);
+    --negative-tint: rgba(255, 69, 58, 0.12);
+    --neutral-tint: rgba(238, 238, 238, 0.1);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: #0e0e11;
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    color: var(--text-p);
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    min-height: 100vh;
+  }
+  .phone {
+    width: 100vw;
+    min-height: 100vh;
+    background: var(--bg0);
+    overflow-x: hidden;
+    position: relative;
+  }
+  .phone::-webkit-scrollbar { width: 4px; }
+  .phone::-webkit-scrollbar-thumb { background: var(--bg2); }
+
+  /* Status bar */
+  .status-bar {
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    font-size: 12px;
+    color: #fff;
+  }
+  .status-bar .right { display: flex; gap: 5px; align-items: center; }
+
+  /* Header */
+  .top-header {
+    height: 44px;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    gap: 4px;
+    border-bottom: 1px solid var(--border);
+  }
+  .header-back { color: var(--text-s); font-size: 22px; cursor: pointer; }
+  .symbol-block {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    flex: 1;
+  }
+  .sym {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-p);
+    letter-spacing: -0.015em;
+  }
+  .sym-perp {
+    font-size: 11px;
+    color: var(--text-t);
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+  }
+  .sym-pct {
+    font-size: 12px;
+    color: var(--positive);
+    font-weight: 600;
+    margin-left: 4px;
+  }
+  .header-actions {
+    margin-left: auto;
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    color: var(--text-s);
+  }
+  .header-icon-btn {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+
+  /* Trading area: order book + order form */
+  .trading-area {
+    padding: 4px 8px 8px;
+    border-bottom: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: 130px 1fr;
+    gap: 6px;
+  }
+
+  /* Order book dummy */
+  .ob {
+    font-size: 9px;
+    line-height: 1.5;
+    font-variant-numeric: tabular-nums;
+  }
+  .ob-header {
+    display: flex;
+    justify-content: space-between;
+    color: var(--text-t);
+    margin-bottom: 2px;
+    padding: 0 2px;
+  }
+  .ob-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0 2px;
+  }
+  .ob-row.sell { color: var(--negative); }
+  .ob-row.buy { color: var(--positive); }
+  .ob-mid {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--positive);
+    padding: 4px 2px 2px;
+    letter-spacing: -0.015em;
+  }
+  .ob-mid .small {
+    font-size: 9px;
+    color: var(--text-t);
+    font-weight: 400;
+    margin-left: 4px;
+  }
+
+  /* Order form dummy */
+  .of { display: flex; flex-direction: column; gap: 4px; }
+  .of-mode-row { display: flex; gap: 4px; }
+  .of-pill {
+    flex: 1;
+    background: var(--bg1);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 5px 6px;
+    font-size: 10px;
+    color: var(--text-s);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .of-pill .caret { color: var(--text-m); font-size: 8px; }
+  .of-row-input {
+    background: var(--bg1);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 6px 8px;
+    font-size: 10px;
+    color: var(--text-t);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .of-row-input.with-suffix .suffix {
+    color: var(--text-s);
+    font-size: 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+  }
+  .of-meta {
+    font-size: 9px;
+    color: var(--text-t);
+    line-height: 1.5;
+    padding: 2px 0;
+  }
+  .of-meta .v { color: var(--text-s); }
+  .of-checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    color: var(--text-s);
+    padding: 2px 0;
+  }
+  .of-checkbox {
+    width: 12px;
+    height: 12px;
+    border: 1px solid var(--bg3);
+    border-radius: 2px;
+    background: var(--bg1);
+  }
+  .of-summary {
+    font-size: 9px;
+    color: var(--text-t);
+    line-height: 1.6;
+  }
+  .of-summary .row { display: flex; justify-content: space-between; }
+  .of-summary .v { color: var(--text-s); }
+  .of-action-row { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+  .of-action {
+    border: none;
+    border-radius: 4px;
+    padding: 9px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 12px;
+    cursor: pointer;
+    color: #fff;
+    font-family: inherit;
+  }
+  .of-action.buy { background: var(--positive); color: #052e0e; }
+  .of-action.sell { background: var(--negative); }
+
+  /* Tabs */
+  .tabs-row {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    padding: 0 12px;
+    background: var(--bg0);
+    position: sticky;
+    top: 0;
+    z-index: 5;
+  }
+  .tab {
+    padding: 10px 8px;
+    font-size: 13px;
+    color: var(--text-t);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-right: 8px;
+    user-select: none;
+  }
+  .tab.active {
+    color: var(--text-p);
+    font-weight: 600;
+    border-bottom-color: var(--text-p);
+  }
+
+  /* Filter row */
+  .filter-row {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    gap: 8px;
+  }
+  .checkbox {
+    width: 16px;
+    height: 16px;
+    border-radius: 3px;
+    border: 1px solid var(--bg3);
+    background: var(--bg1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .checkbox.checked { background: var(--blue); border-color: var(--blue); }
+  .checkbox.checked::after {
+    content: '';
+    width: 4px;
+    height: 7px;
+    border: solid #fff;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+    margin-bottom: 1px;
+  }
+  .filter-label { flex: 1; font-size: 13px; color: var(--text-p); }
+  .filter-action {
+    background: transparent;
+    border: 1px solid var(--bg3);
+    color: var(--text-p);
+    padding: 5px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  /* Card list — outer padding 16 so card width = 360 - 32 = 328 (Figma spec) */
+  .cards-container {
+    padding: 0 16px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  /* Card base — 328 wide */
+  .card {
+    background: var(--bg0);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  /* When action menu is open, allow dropdown to overflow upward */
+  .card.menu-open {
+    overflow: visible;
+  }
+  /* Body: padding 8/8/8/8, gap 6 vertical */
+  .card-body {
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    position: relative;
+  }
+
+  /* Card header section — gap 2 between symbol-row and pnl-row (Figma) */
+  .card-head {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  /* Header row: width 252 (FIXED, leaves space for corner btns), wrap, gap 4×4 */
+  .card-head-row {
+    display: flex;
+    align-items: center;
+    width: 252px;
+    flex-wrap: wrap;
+    column-gap: 4px;
+    row-gap: 4px;
+  }
+  .card-symbol {
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    line-height: 1.4;
+  }
+  .badges { display: flex; align-items: center; gap: 2px; }
+  /* Badge: height 16, pad 2/4 (Figma) */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    height: 16px;
+    padding: 2px 4px;
+    border-radius: 4px;
+    background: var(--neutral-tint);
+    font-size: 10px;
+    color: var(--text-s);
+    line-height: 1.2;
+  }
+  .badge.trend-up { background: var(--positive-tint); color: var(--positive); width: 20px; }
+  .badge.trend-down { background: var(--negative-tint); color: var(--negative); width: 20px; }
+  .badge svg { display: block; }
+
+  /* Corner btns: top 10, right 8 (Figma — body-relative 296,10 with 24×24) */
+  .corner-btns {
+    position: absolute;
+    top: 10px;
+    right: 8px;
+    display: flex;
+    gap: 4px;
+  }
+  /* Icon button: 24×24, inner icon 16×16 (Size=Small) */
+  .corner-btn {
+    width: 24px;
+    height: 24px;
+    border: none;
+    background: transparent;
+    border-radius: 4px;
+    color: var(--text-s);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .corner-btn svg { display: block; width: 16px; height: 16px; }
+
+  /* PnL row: gap 2 (Figma) */
+  .pnl {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+  .pnl-text {
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    line-height: 1.35;
+    font-variant-numeric: tabular-nums;
+  }
+  .pnl.positive .pnl-text { color: var(--positive); }
+  .pnl.negative .pnl-text { color: var(--negative); }
+  .pnl svg { display: block; color: var(--text-m); }
+
+  /* Action row (Size+Margin or Size+Filled): gap 4 */
+  .action-row {
+    display: flex;
+    flex-wrap: wrap;
+    column-gap: 4px;
+    row-gap: 4px;
+  }
+  /* Cell: ~148 wide (1fr), pad 6/4/6/10 (Position with Edit btn) */
+  .cell {
+    position: relative;
+    flex: 1 1 0;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 4px 6px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    min-width: 0;
+  }
+  /* Order cell (no Edit): pad 6/6/6/10 (Figma) */
+  .cell.no-edit {
+    padding: 6px 6px 6px 10px;
+  }
+  /* Stack (label-line + value): no gap (Figma — vertical gap 0) */
+  .stack {
+    flex: 1 0 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .label-line {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    height: 15px;
+    min-width: 0;
+    max-width: 100%;
+  }
+  /* Size toggle (clickable label-line in Size cell) */
+  .label-line.size-toggle {
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .label-line.size-toggle:hover .label,
+  .label-line.size-toggle:hover .swap-icon {
+    color: var(--text-s);
+  }
+  .label {
+    font-size: 11px;
+    color: var(--text-t);
+    line-height: 1.4;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+  }
+  .value {
+    font-size: 13px;
+    color: var(--text-p);
+    line-height: 1.4;
+    letter-spacing: -0.015em;
+    font-variant-numeric: tabular-nums;
+    height: 18px;
+    white-space: nowrap;
+  }
+  .swap-icon {
+    width: 12px;
+    height: 12px;
+    color: var(--text-t);
+    display: block;
+    flex-shrink: 0;
+  }
+  /* Edit btn: 24×24 with inner 16×16 icon */
+  .edit-btn {
+    width: 24px;
+    height: 24px;
+    border: none;
+    background: transparent;
+    border-radius: 4px;
+    color: var(--text-s);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .edit-btn svg { display: block; }
+
+  /* Info row (Entry/Mark/Liq): gap 8 horizontal, gap 4 wrap (Figma) */
+  .info-row {
+    display: flex;
+    flex-wrap: wrap;
+    column-gap: 8px;
+    row-gap: 4px;
+  }
+  /* Info cell: ~96 wide (1fr), vertical, gap 0 (Figma) */
+  .info-cell {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    justify-content: center;
+  }
+  .info-cell.right { align-items: flex-end; text-align: right; }
+  .info-cell.center { align-items: flex-start; }
+
+  /* Single info row (Order Card — Limit/Trigger Price right-aligned) */
+  .single-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+  .single-info .label { font-size: 11px; color: var(--text-t); line-height: 1.4; }
+  .single-info .value { font-size: 13px; color: var(--text-p); height: auto; line-height: 1.4; }
+  /* Price group (Trigger Price + Order Price) — gap 2 between rows */
+  .price-group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  /* TP/SL row: gap 16 horizontal, wrap (Figma) */
+  .tpsl-row {
+    display: flex;
+    flex-wrap: wrap;
+    column-gap: 16px;
+    row-gap: 16px;
+    font-size: 11px;
+    line-height: 1.4;
+    font-variant-numeric: tabular-nums;
+  }
+  .tpsl-item { display: inline-flex; align-items: center; gap: 2px; }
+  .tpsl-key { color: var(--text-t); }
+  .tpsl-count { color: var(--text-t); }
+  .tpsl-price { color: var(--text-p); }
+
+  /* Footer: gap 0, flex row (Figma) */
+  .card-footer {
+    background: var(--bg1);
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: stretch;
+  }
+  /* Footer btn: pad 6/16, height 32, min-width 56 */
+  .footer-btn {
+    height: 32px;
+    padding: 6px 16px;
+    background: transparent;
+    border: none;
+    border-left: 1px solid var(--border);
+    color: var(--text-p);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 56px;
+  }
+  .footer-btn:first-child { border-left: none; }
+  /* Adjust btn: 32×32 (square), pad 6/0 */
+  .footer-btn.adjust {
+    min-width: 32px;
+    width: 32px;
+    padding: 6px 0;
+    color: var(--text-s);
+  }
+  /* Close: fills remaining, MAX (right) align */
+  .footer-btn.close {
+    flex: 1;
+    justify-content: flex-end;
+  }
+
+  /* Action menu (dropdown from ⋮ button) */
+  .action-menu-wrap {
+    position: relative;
+  }
+  .action-menu {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 6px;
+    background: var(--bg2);
+    border-radius: 8px;
+    padding: 4px;
+    min-width: 130px;
+    z-index: 20;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+    flex-direction: column;
+    gap: 0;
+  }
+  .action-menu-wrap.open .action-menu { display: flex; }
+  .action-menu-item {
+    padding: 6px 10px;
+    font-size: 13px;
+    color: var(--text-p);
+    cursor: pointer;
+    white-space: nowrap;
+    border-radius: 4px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+  }
+  .action-menu-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+  }
+  .footer-btn.adjust.active {
+    background: rgba(255, 255, 255, 0.05);
+  }
+</style>
+</head>
+<body>
+<div class="phone">
+  <!-- Status bar -->
+  <div class="status-bar">
+    <span>9:30 PM</span>
+    <span class="right">
+      <svg width="14" height="10" viewBox="0 0 14 10" fill="none"><path d="M7 1.5C8.7 1.5 10.3 2.1 11.6 3.2L13 1.7C11.3 0.6 9.2 0 7 0C4.8 0 2.7 0.6 1 1.7L2.4 3.2C3.7 2.1 5.3 1.5 7 1.5Z" fill="#fff"/><circle cx="7" cy="8" r="1.5" fill="#fff"/></svg>
+      <svg width="18" height="10" viewBox="0 0 18 10"><rect x="0" y="2" width="3" height="6" fill="#fff"/><rect x="5" y="0" width="3" height="8" fill="#fff"/><rect x="10" y="3" width="3" height="5" fill="#fff" opacity="0.4"/></svg>
+      <span style="color:#fff;font-size:11px;">100%</span>
+    </span>
+  </div>
+
+  <!-- Header -->
+  <div class="top-header">
+    <span class="header-back">‹</span>
+    <div class="symbol-block">
+      <span class="sym">BTC</span>
+      <span class="sym-perp">Perp ⌄</span>
+      <span class="sym-pct">+8.05%</span>
+    </div>
+    <div class="header-actions">
+      <span class="header-icon-btn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 13h6l3-9 4 18 3-9h2"/></svg>
+      </span>
+      <span class="header-icon-btn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+      </span>
+      <span class="header-icon-btn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+      </span>
+    </div>
+  </div>
+
+  <!-- Trading area: order book + order form -->
+  <div class="trading-area">
+    <div class="ob">
+      <div class="ob-header"><span>Price</span><span>Size</span></div>
+      <!-- sell -->
+      <div class="ob-row sell"><span>123,103.5</span><span>401.85</span></div>
+      <div class="ob-row sell"><span>123,103.4</span><span>0.47x</span></div>
+      <div class="ob-row sell"><span>123,103.3</span><span>219.95</span></div>
+      <div class="ob-row sell"><span>123,103.2</span><span>219.90</span></div>
+      <div class="ob-row sell"><span>123,103.1</span><span>0.47x</span></div>
+      <div class="ob-row sell"><span>123,103.0</span><span>219.90</span></div>
+      <div class="ob-row sell"><span>123,102.9</span><span>219.95</span></div>
+      <div class="ob-row sell"><span>123,102.8</span><span>50.5x</span></div>
+      <div class="ob-mid">122,023.5 <span class="small">122,023.0</span></div>
+      <!-- buy -->
+      <div class="ob-row buy"><span>122,022.7</span><span>2.4x</span></div>
+      <div class="ob-row buy"><span>122,022.6</span><span>0.47x</span></div>
+      <div class="ob-row buy"><span>122,022.5</span><span>219.95</span></div>
+      <div class="ob-row buy"><span>122,022.0</span><span>0.47x</span></div>
+      <div class="ob-row buy"><span>122,021.9</span><span>219.95</span></div>
+      <div class="ob-row buy"><span>122,021.8</span><span>2.4x</span></div>
+      <div class="ob-row buy"><span>122,021.5</span><span>50.5x</span></div>
+      <div class="ob-row buy"><span>122,021.0</span><span>50.5x</span></div>
+      <div style="margin-top:2px;font-size:9px;color:var(--text-t);">Spd: 0.5x</div>
+    </div>
+
+    <div class="of">
+      <div class="of-mode-row">
+        <div class="of-pill">Isolated <span class="caret">▾</span></div>
+        <div class="of-pill">100x <span class="caret">▾</span></div>
+      </div>
+      <div class="of-pill" style="background:var(--bg2);">Trigger <span class="caret">▾</span></div>
+      <div class="of-row-input">Trigger Price</div>
+      <div class="of-pill">Execute Price <span class="caret">Limit ▾</span></div>
+      <div class="of-row-input with-suffix">
+        <span>Quantity</span>
+        <span class="suffix">BTC ▾</span>
+      </div>
+      <div class="of-meta">
+        Available <span class="v" style="float:right;">99,899,499.99 USDT</span>
+      </div>
+      <div class="of-checkbox-row">
+        <span class="of-checkbox"></span>
+        <span>Reduce-Only</span>
+      </div>
+      <div class="of-checkbox-row">
+        <span class="of-checkbox"></span>
+        <span>TP/SL</span>
+      </div>
+      <div class="of-summary">
+        <div class="row"><span>Max</span><span class="v">55.81795 BTC</span></div>
+        <div class="row"><span>Margin</span><span class="v">--</span></div>
+        <div class="row"><span>Est. liq. price</span><span class="v">55.81795 BTC</span></div>
+      </div>
+      <div class="of-action-row">
+        <button class="of-action buy">Buy / Long</button>
+        <button class="of-action sell">Sell / Short</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs-row">
+    <div class="tab active" data-tab="positions">Positions (3)</div>
+    <div class="tab" data-tab="orders">Orders (6)</div>
+    <div class="tab" data-tab="history">History</div>
+  </div>
+
+  <!-- Filter -->
+  <div class="filter-row">
+    <span class="checkbox checked" id="symbolCheckbox"></span>
+    <span class="filter-label" id="symbolCheckboxLabel">Show all symbols</span>
+    <button class="filter-action" id="filterAction">Close All</button>
+  </div>
+
+  <!-- Card lists -->
+  <div class="cards-container" id="positionsList"></div>
+  <div class="cards-container" id="ordersList" style="display:none;"></div>
+  <div class="cards-container" id="historyList" style="display:none;">
+    <div style="text-align:center;color:var(--text-t);padding:40px 0;font-size:12px;">No history</div>
+  </div>
+</div>
+
+<script>
+  // SVG icons
+  const ICONS = {
+    trendUp: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M3 17l6-6 4 4 8-8M14 7h7v7"/></svg>',
+    trendDown: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M3 7l6 6 4-4 8 8M14 17h7v-7"/></svg>',
+    swap: '<svg class="swap-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 7h13l-3-3M17 17H4l3 3"/></svg>',
+    edit: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>',
+    chart: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="7" y1="3" x2="7" y2="6"/><line x1="7" y1="14" x2="7" y2="20"/><rect x="5" y="6" width="4" height="8" rx="0.5"/><line x1="17" y1="3" x2="17" y2="9"/><line x1="17" y1="17" x2="17" y2="20"/><rect x="15" y="9" width="4" height="8" rx="0.5"/></svg>',
+    share: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>',
+    chev: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 6l6 6-6 6"/></svg>',
+    ellipsis: '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="6" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="18" r="1.6"/></svg>',
+  };
+
+  // Position cards data — size toggles between USDT and symbol unit
+  const positions = [
+    {
+      symbol: "BTC",
+      mode: "Isolated 100x",
+      pnl: { val: 12.05, pct: 1.42 },
+      size: { val: "123,456.123456", unit: "USDT" },
+      sizeAlt: { val: "1.23456789", unit: "BTC" },
+      margin: "123,456.123456",
+      prices: { entry: "75,123.12", mark: "76,123.12", liq: "60,123.12" },
+      tpsl: null,
+    },
+    {
+      symbol: "ETH",
+      mode: "Isolated 100x",
+      pnl: { val: -12.05, pct: -1.42 },
+      size: { val: "9,123.45", unit: "USDT" },
+      sizeAlt: { val: "3.123456", unit: "ETH" },
+      margin: "9,123.45",
+      prices: { entry: "75,123.12", mark: "76,123.12", liq: "60,123.12" },
+      tpsl: { tp: { count: 1, price: "770,000.7" }, sl: { count: 5, price: "770,000.7" } },
+    },
+    {
+      symbol: "XRP",
+      mode: "Isolated 100x",
+      pnl: { val: 12.05, pct: 1.42 },
+      size: { val: "150,069.16854", unit: "USDT" },
+      sizeAlt: { val: "245,820.5", unit: "XRP" },
+      margin: "150,069.16854",
+      prices: { entry: "75,123.12", mark: "76,123.12", liq: "60,123.12" },
+      tpsl: null,
+    },
+    {
+      symbol: "VELODROME",
+      mode: "Isolated 100x",
+      pnl: { val: 12.05, pct: 1.42 },
+      size: { val: "123,456.123456", unit: "USDT" },
+      sizeAlt: { val: "1,234.56", unit: "VELODROME" },
+      margin: "123,456.123456",
+      prices: { entry: "75,123.12", mark: "76,123.12", liq: "60,123.12" },
+      tpsl: null,
+    },
+  ];
+
+  // Order cards data
+  const orders = [
+    {
+      symbol: "BTC", type: "tpsl-tp",
+      size: { val: "123,456.123456", unit: "USDT" },
+      limitPrice: "770,000.12",
+    },
+    {
+      symbol: "ETH", type: "tpsl-sl",
+      size: { val: "123,456.123456", unit: "USDT" },
+      limitPrice: "770,000.12",
+    },
+    {
+      symbol: "XRP", type: "limit", reduceOnly: true,
+      mode: "Isolated 100x",
+      size: { val: "123,456.123456", unit: "USDT" },
+      filled: "0.00",
+      limitPrice: "770,000.12",
+      tpsl: { tp: { count: 1, price: "770,000.7" }, sl: { count: 5, price: "770,000.7" } },
+    },
+    {
+      symbol: "BTC", type: "limit", reduceOnly: false,
+      mode: "Isolated 100x",
+      size: { val: "123,456.123456", unit: "USDT" },
+      filled: "0.00",
+      limitPrice: "770,000.12",
+      tpsl: { tp: { count: 1, price: "770,000.7" }, sl: { count: 5, price: "770,000.7" } },
+    },
+    {
+      symbol: "BTC", type: "trigger", reduceOnly: true,
+      mode: "Isolated 100x",
+      size: { val: "123,456.123456", unit: "USDT" },
+      filled: "0.00",
+      triggerPrice: "770,000.12",
+      orderPrice: "770,000.12",
+      tpsl: { tp: { count: 1, price: "770,000.7" }, sl: { count: 5, price: "770,000.7" } },
+    },
+    {
+      symbol: "BTC", type: "trigger", reduceOnly: false,
+      mode: "Isolated 100x",
+      size: { val: "123,456.123456", unit: "USDT" },
+      filled: "0.00",
+      triggerPrice: "770,000.12",
+      orderPrice: "770,000.12",
+      tpsl: { tp: { count: 1, price: "770,000.7" }, sl: { count: 5, price: "770,000.7" } },
+    },
+  ];
+
+  // Render Position card
+  function renderPositionCard(p) {
+    const isPos = p.pnl.val >= 0;
+    const pnlSign = p.pnl.val > 0 ? "+" : "";
+    const pctSign = p.pnl.pct > 0 ? "+" : "";
+    const pnlClass = isPos ? "positive" : "negative";
+    const trendIcon = isPos ? ICONS.trendUp : ICONS.trendDown;
+    const trendClass = isPos ? "trend-up" : "trend-down";
+
+    const tpslRow = p.tpsl ? `
+      <div class="tpsl-row">
+        ${p.tpsl.tp ? `<span class="tpsl-item"><span class="tpsl-key">TP</span><span class="tpsl-count">(${p.tpsl.tp.count})</span><span class="tpsl-price">${p.tpsl.tp.price}</span></span>` : ""}
+        ${p.tpsl.sl ? `<span class="tpsl-item"><span class="tpsl-key">SL</span><span class="tpsl-count">(${p.tpsl.sl.count})</span><span class="tpsl-price">${p.tpsl.sl.price}</span></span>` : ""}
+      </div>` : "";
+
+    // Build action menu items based on mode and direction
+    const isCross = /Cross/i.test(p.mode);
+    const direction = p.direction || "long";
+    const flipText = direction === "long" ? "Flip to Short" : "Flip to Long";
+    const menuItems = [
+      "Add Position",
+      ...(isCross ? [] : ["Adjust Margin"]),
+      "Adjust Leverage",
+      flipText,
+    ];
+
+    return `
+    <div class="card">
+      <div class="card-body">
+        <div class="corner-btns">
+          <button class="corner-btn">${ICONS.chart}</button>
+          <button class="corner-btn">${ICONS.share}</button>
+        </div>
+        <div class="card-head">
+          <div class="card-head-row">
+            <span class="card-symbol">${p.symbol}</span>
+            <div class="badges">
+              <span class="badge ${trendClass}">${trendIcon}</span>
+              <span class="badge">${p.mode}</span>
+            </div>
+          </div>
+          <div class="pnl ${pnlClass}">
+            <span class="pnl-text">${pnlSign}${p.pnl.val.toFixed(2)} (${pctSign}${p.pnl.pct.toFixed(2)}%)</span>
+            ${ICONS.chev}
+          </div>
+        </div>
+        <div class="action-row">
+          <div class="cell"
+               data-size-current="usdt"
+               data-size-usdt-val="${p.size.val}"
+               data-size-usdt-unit="${p.size.unit}"
+               data-size-alt-val="${p.sizeAlt?.val || ""}"
+               data-size-alt-unit="${p.sizeAlt?.unit || ""}">
+            <div class="stack">
+              <div class="label-line size-toggle">
+                <span class="label">Size <span class="unit">(${p.size.unit})</span></span>
+                ${ICONS.swap}
+              </div>
+              <span class="value size-value">${p.size.val}</span>
+            </div>
+            <button class="edit-btn">${ICONS.edit}</button>
+          </div>
+          <div class="cell">
+            <div class="stack">
+              <div class="label-line"><span class="label">Margin (USDT)</span></div>
+              <span class="value">${p.margin}</span>
+            </div>
+            <button class="edit-btn">${ICONS.edit}</button>
+          </div>
+        </div>
+        <div class="info-row">
+          <div class="info-cell">
+            <span class="label">Entry Price</span>
+            <span class="value">${p.prices.entry}</span>
+          </div>
+          <div class="info-cell">
+            <span class="label">Mark Price</span>
+            <span class="value">${p.prices.mark}</span>
+          </div>
+          <div class="info-cell right">
+            <span class="label">Liq. Price</span>
+            <span class="value">${p.prices.liq}</span>
+          </div>
+        </div>
+        ${tpslRow}
+      </div>
+      <div class="card-footer">
+        <div class="action-menu-wrap">
+          <button class="footer-btn adjust">${ICONS.ellipsis}</button>
+          <div class="action-menu">
+            ${menuItems.map(t => `<div class="action-menu-item">${t}</div>`).join("")}
+          </div>
+        </div>
+        <button class="footer-btn">TP</button>
+        <button class="footer-btn">SL</button>
+        <button class="footer-btn close">Close</button>
+      </div>
+    </div>`;
+  }
+
+  // Render Order card
+  function renderOrderCard(o) {
+    let badges = "";
+    let priceRows = "";
+    let actionCells = "";
+    let footerBtns = "";
+    let tpslRow = "";
+
+    if (o.type === "tpsl-tp" || o.type === "tpsl-sl") {
+      const tpslLabel = o.type === "tpsl-tp" ? "Limit (TP)" : "Limit (SL)";
+      badges = `
+        <span class="badge trend-up">${ICONS.trendUp}</span>
+        <span class="badge">${tpslLabel}</span>
+      `;
+      actionCells = `
+        <div class="cell no-edit">
+          <div class="stack">
+            <div class="label-line"><span class="label">Size (${o.size.unit})</span></div>
+            <span class="value">${o.size.val}</span>
+          </div>
+        </div>`;
+      priceRows = `
+        <div class="single-info">
+          <span class="label">Limit Price</span>
+          <span class="value">${o.limitPrice}</span>
+        </div>`;
+      footerBtns = `<button class="footer-btn close">Close</button>`;
+    } else {
+      // limit or trigger
+      const typeLabel = o.type === "limit" ? "Limit" : "Trigger";
+      const reduceOnlyBadge = o.reduceOnly ? `<span class="badge">Reduce Only</span>` : "";
+      badges = `
+        <span class="badge trend-up">${ICONS.trendUp}</span>
+        <span class="badge">${o.mode}</span>
+        <span class="badge">${typeLabel}</span>
+        ${reduceOnlyBadge}
+      `;
+      actionCells = `
+        <div class="cell no-edit">
+          <div class="stack">
+            <div class="label-line"><span class="label">Size (${o.size.unit})</span></div>
+            <span class="value">${o.size.val}</span>
+          </div>
+        </div>
+        <div class="cell no-edit">
+          <div class="stack">
+            <div class="label-line"><span class="label">Filled (${o.size.unit})</span></div>
+            <span class="value">${o.filled}</span>
+          </div>
+        </div>`;
+      if (o.type === "limit") {
+        priceRows = `
+          <div class="single-info">
+            <span class="label">Limit Price</span>
+            <span class="value">${o.limitPrice}</span>
+          </div>`;
+      } else {
+        priceRows = `
+          <div class="price-group">
+            <div class="single-info">
+              <span class="label">Trigger Price</span>
+              <span class="value">${o.triggerPrice}</span>
+            </div>
+            <div class="single-info">
+              <span class="label">Order Price</span>
+              <span class="value">${o.orderPrice}</span>
+            </div>
+          </div>`;
+      }
+      if (o.tpsl) {
+        tpslRow = `
+        <div class="tpsl-row">
+          ${o.tpsl.tp ? `<span class="tpsl-item"><span class="tpsl-key">TP</span><span class="tpsl-count">(${o.tpsl.tp.count})</span><span class="tpsl-price">${o.tpsl.tp.price}</span></span>` : ""}
+          ${o.tpsl.sl ? `<span class="tpsl-item"><span class="tpsl-key">SL</span><span class="tpsl-count">(${o.tpsl.sl.count})</span><span class="tpsl-price">${o.tpsl.sl.price}</span></span>` : ""}
+        </div>`;
+      }
+      footerBtns = `
+        <button class="footer-btn">TP</button>
+        <button class="footer-btn">SL</button>
+        <button class="footer-btn close">Close</button>`;
+    }
+
+    return `
+    <div class="card">
+      <div class="card-body">
+        <div class="card-head">
+          <div class="card-head-row">
+            <span class="card-symbol">${o.symbol}</span>
+            <div class="badges">${badges}</div>
+          </div>
+        </div>
+        <div class="action-row">${actionCells}</div>
+        ${priceRows}
+        ${tpslRow}
+      </div>
+      <div class="card-footer">${footerBtns}</div>
+    </div>`;
+  }
+
+  // State
+  const CURRENT_SYMBOL = "BTC"; // header symbol
+  let showAllSymbols = true;
+
+  const tabs = document.querySelectorAll(".tab");
+  const lists = {
+    positions: document.getElementById("positionsList"),
+    orders: document.getElementById("ordersList"),
+    history: document.getElementById("historyList"),
+  };
+  const filterAction = document.getElementById("filterAction");
+  const checkbox = document.getElementById("symbolCheckbox");
+  const checkboxLabel = document.getElementById("symbolCheckboxLabel");
+
+  function getFiltered(items) {
+    return showAllSymbols ? items : items.filter(x => x.symbol === CURRENT_SYMBOL);
+  }
+
+  function rerender() {
+    const filteredPositions = getFiltered(positions);
+    const filteredOrders = getFiltered(orders);
+    lists.positions.innerHTML = filteredPositions.map(renderPositionCard).join("");
+    lists.orders.innerHTML = filteredOrders.map(renderOrderCard).join("");
+    // Tab counts always reflect total across all symbols
+    tabs[0].textContent = `Positions (${positions.length})`;
+    tabs[1].textContent = `Orders (${orders.length})`;
+    tabs[2].textContent = `History`;
+    // Reapply active class
+    document.querySelector(`.tab[data-tab="${activeTabName}"]`).classList.add("active");
+  }
+
+  let activeTabName = "positions";
+
+  tabs.forEach(t => {
+    t.addEventListener("click", () => {
+      activeTabName = t.dataset.tab;
+      tabs.forEach(x => x.classList.remove("active"));
+      t.classList.add("active");
+      Object.entries(lists).forEach(([k, el]) => {
+        el.style.display = k === activeTabName ? "flex" : "none";
+      });
+      filterAction.textContent = activeTabName === "orders" ? "Cancel All" : "Close All";
+    });
+  });
+
+  function toggleCheckbox() {
+    showAllSymbols = !showAllSymbols;
+    checkbox.classList.toggle("checked", showAllSymbols);
+    rerender();
+  }
+  checkbox.addEventListener("click", toggleCheckbox);
+  checkboxLabel.addEventListener("click", toggleCheckbox);
+
+  // Action menu (dropdown) toggle
+  function closeAllMenus() {
+    document.querySelectorAll(".action-menu-wrap.open").forEach(w => {
+      w.classList.remove("open");
+      w.closest(".card")?.classList.remove("menu-open");
+      w.querySelector(".footer-btn.adjust")?.classList.remove("active");
+    });
+  }
+  document.addEventListener("click", (e) => {
+    const adjustBtn = e.target.closest(".footer-btn.adjust");
+    if (adjustBtn) {
+      e.stopPropagation();
+      const wrap = adjustBtn.closest(".action-menu-wrap");
+      const wasOpen = wrap.classList.contains("open");
+      closeAllMenus();
+      if (!wasOpen) {
+        wrap.classList.add("open");
+        wrap.closest(".card").classList.add("menu-open");
+        adjustBtn.classList.add("active");
+      }
+      return;
+    }
+
+    // Size unit toggle (label + swap icon area)
+    const sizeToggle = e.target.closest(".label-line.size-toggle");
+    if (sizeToggle) {
+      e.stopPropagation();
+      const cell = sizeToggle.closest(".cell");
+      const current = cell.dataset.sizeCurrent;
+      const altUnit = cell.dataset.sizeAltUnit;
+      if (!altUnit) return;
+      const usdtVal = cell.dataset.sizeUsdtVal;
+      const usdtUnit = cell.dataset.sizeUsdtUnit;
+      const altVal = cell.dataset.sizeAltVal;
+      const next = current === "usdt" ? "alt" : "usdt";
+      cell.dataset.sizeCurrent = next;
+      const unitSpan = cell.querySelector(".unit");
+      const valueSpan = cell.querySelector(".size-value");
+      if (next === "usdt") {
+        unitSpan.textContent = `(${usdtUnit})`;
+        valueSpan.textContent = usdtVal;
+      } else {
+        unitSpan.textContent = `(${altUnit})`;
+        valueSpan.textContent = altVal;
+      }
+      return;
+    }
+
+    // Click on a menu item or outside → close
+    closeAllMenus();
+  });
+
+  // Initial render
+  rerender();
+</script>
+</body>
+</html>
