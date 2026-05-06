@@ -807,18 +807,22 @@
     {
       symbol: "BTC", type: "tpsl-tp",
       size: { val: "123,456.123456", unit: "USDT" },
+      sizeAlt: { val: "1.23456789", unit: "BTC" },
       limitPrice: "770,000.12",
     },
     {
       symbol: "ETH", type: "tpsl-sl",
       size: { val: "123,456.123456", unit: "USDT" },
+      sizeAlt: { val: "37.654321", unit: "ETH" },
       limitPrice: "770,000.12",
     },
     {
       symbol: "XRP", type: "limit", reduceOnly: true,
       mode: "Isolated 100x",
       size: { val: "123,456.123456", unit: "USDT" },
+      sizeAlt: { val: "245,820.5", unit: "XRP" },
       filled: "0.00",
+      filledAlt: "0.00",
       limitPrice: "770,000.12",
       tpsl: { tp: { count: 1, price: "770,000.7" }, sl: { count: 5, price: "770,000.7" } },
     },
@@ -826,7 +830,9 @@
       symbol: "BTC", type: "limit", reduceOnly: false,
       mode: "Isolated 100x",
       size: { val: "123,456.123456", unit: "USDT" },
+      sizeAlt: { val: "1.23456789", unit: "BTC" },
       filled: "0.00",
+      filledAlt: "0.00",
       limitPrice: "770,000.12",
       tpsl: { tp: { count: 1, price: "770,000.7" }, sl: { count: 5, price: "770,000.7" } },
     },
@@ -834,7 +840,9 @@
       symbol: "BTC", type: "trigger", reduceOnly: true,
       mode: "Isolated 100x",
       size: { val: "123,456.123456", unit: "USDT" },
+      sizeAlt: { val: "1.23456789", unit: "BTC" },
       filled: "0.00",
+      filledAlt: "0.00",
       triggerPrice: "770,000.12",
       orderPrice: "770,000.12",
       tpsl: { tp: { count: 1, price: "770,000.7" }, sl: { count: 5, price: "770,000.7" } },
@@ -843,7 +851,9 @@
       symbol: "BTC", type: "trigger", reduceOnly: false,
       mode: "Isolated 100x",
       size: { val: "123,456.123456", unit: "USDT" },
+      sizeAlt: { val: "1.23456789", unit: "BTC" },
       filled: "0.00",
+      filledAlt: "0.00",
       triggerPrice: "770,000.12",
       orderPrice: "770,000.12",
       tpsl: { tp: { count: 1, price: "770,000.7" }, sl: { count: 5, price: "770,000.7" } },
@@ -959,19 +969,29 @@
     let footerBtns = "";
     let tpslRow = "";
 
+    // Size cell with USDT ↔ symbol unit toggle
+    const hasAlt = !!o.sizeAlt;
+    const sizeCellAttrs = hasAlt
+      ? `data-size-current="usdt" data-size-usdt-val="${o.size.val}" data-size-usdt-unit="${o.size.unit}" data-size-alt-val="${o.sizeAlt.val}" data-size-alt-unit="${o.sizeAlt.unit}"`
+      : "";
+    const sizeLabelLine = hasAlt
+      ? `<div class="label-line size-toggle"><span class="label">Size <span class="unit">(${o.size.unit})</span></span>${ICONS.swap}</div>`
+      : `<div class="label-line"><span class="label">Size (${o.size.unit})</span></div>`;
+    const sizeCell = `
+      <div class="cell no-edit" ${sizeCellAttrs}>
+        <div class="stack">
+          ${sizeLabelLine}
+          <span class="value size-value">${o.size.val}</span>
+        </div>
+      </div>`;
+
     if (o.type === "tpsl-tp" || o.type === "tpsl-sl") {
       const tpslLabel = o.type === "tpsl-tp" ? "Limit (TP)" : "Limit (SL)";
       badges = `
         <span class="badge trend-up">${ICONS.trendUp}</span>
         <span class="badge">${tpslLabel}</span>
       `;
-      actionCells = `
-        <div class="cell no-edit">
-          <div class="stack">
-            <div class="label-line"><span class="label">Size (${o.size.unit})</span></div>
-            <span class="value">${o.size.val}</span>
-          </div>
-        </div>`;
+      actionCells = sizeCell;
       priceRows = `
         <div class="single-info">
           <span class="label">Limit Price</span>
@@ -988,17 +1008,15 @@
         <span class="badge">${typeLabel}</span>
         ${reduceOnlyBadge}
       `;
+      const filledCellAttrs = hasAlt
+        ? `data-filled-usdt-val="${o.filled}" data-filled-alt-val="${o.filledAlt || "0.00"}"`
+        : "";
       actionCells = `
-        <div class="cell no-edit">
+        ${sizeCell}
+        <div class="cell no-edit filled-cell" ${filledCellAttrs}>
           <div class="stack">
-            <div class="label-line"><span class="label">Size (${o.size.unit})</span></div>
-            <span class="value">${o.size.val}</span>
-          </div>
-        </div>
-        <div class="cell no-edit">
-          <div class="stack">
-            <div class="label-line"><span class="label">Filled (${o.size.unit})</span></div>
-            <span class="value">${o.filled}</span>
+            <div class="label-line"><span class="label">Filled <span class="filled-unit">(${o.size.unit})</span></span></div>
+            <span class="value filled-value">${o.filled}</span>
           </div>
         </div>`;
       if (o.type === "limit") {
@@ -1159,6 +1177,21 @@
       } else {
         unitSpan.textContent = `(${altUnit})`;
         valueSpan.textContent = altVal;
+      }
+      // Sync Filled cell in same card (Order cards)
+      const filledCell = cell.closest(".card")?.querySelector(".filled-cell");
+      if (filledCell) {
+        const fUsdtVal = filledCell.dataset.filledUsdtVal;
+        const fAltVal = filledCell.dataset.filledAltVal;
+        const fUnitSpan = filledCell.querySelector(".filled-unit");
+        const fValueSpan = filledCell.querySelector(".filled-value");
+        if (next === "usdt") {
+          fUnitSpan.textContent = `(${usdtUnit})`;
+          fValueSpan.textContent = fUsdtVal;
+        } else {
+          fUnitSpan.textContent = `(${altUnit})`;
+          fValueSpan.textContent = fAltVal;
+        }
       }
       return;
     }
