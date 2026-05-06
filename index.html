@@ -536,7 +536,19 @@
     line-height: 1.4;
     font-variant-numeric: tabular-nums;
   }
-  .tpsl-item { display: inline-flex; align-items: center; gap: 2px; }
+  .tpsl-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 4px;
+    margin: -2px -4px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .tpsl-item:hover { background: rgba(255, 255, 255, 0.05); }
+  .tpsl-item:active { background: rgba(255, 255, 255, 0.08); }
+  .tpsl-item .tpsl-chev { color: var(--text-m); display: block; margin-left: 1px; }
   .tpsl-key { color: var(--text-t); }
   .tpsl-count { color: var(--text-t); }
   .tpsl-price { color: var(--text-p); }
@@ -847,10 +859,11 @@
     const trendIcon = isPos ? ICONS.trendUp : ICONS.trendDown;
     const trendClass = isPos ? "trend-up" : "trend-down";
 
+    const tpslChev = '<svg class="tpsl-chev" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>';
     const tpslRow = p.tpsl ? `
       <div class="tpsl-row">
-        ${p.tpsl.tp ? `<span class="tpsl-item"><span class="tpsl-key">TP</span><span class="tpsl-count">(${p.tpsl.tp.count})</span><span class="tpsl-price">${p.tpsl.tp.price}</span></span>` : ""}
-        ${p.tpsl.sl ? `<span class="tpsl-item"><span class="tpsl-key">SL</span><span class="tpsl-count">(${p.tpsl.sl.count})</span><span class="tpsl-price">${p.tpsl.sl.price}</span></span>` : ""}
+        ${p.tpsl.tp ? `<span class="tpsl-item" data-tpsl="tp"><span class="tpsl-key">TP</span><span class="tpsl-count">(${p.tpsl.tp.count})</span><span class="tpsl-price">${p.tpsl.tp.price}</span>${tpslChev}</span>` : ""}
+        ${p.tpsl.sl ? `<span class="tpsl-item" data-tpsl="sl"><span class="tpsl-key">SL</span><span class="tpsl-count">(${p.tpsl.sl.count})</span><span class="tpsl-price">${p.tpsl.sl.price}</span>${tpslChev}</span>` : ""}
       </div>` : "";
 
     // Build action menu items based on mode and direction
@@ -1007,11 +1020,12 @@
             </div>
           </div>`;
       }
+      const tpslChev = '<svg class="tpsl-chev" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>';
       if (o.tpsl) {
         tpslRow = `
         <div class="tpsl-row">
-          ${o.tpsl.tp ? `<span class="tpsl-item"><span class="tpsl-key">TP</span><span class="tpsl-count">(${o.tpsl.tp.count})</span><span class="tpsl-price">${o.tpsl.tp.price}</span></span>` : ""}
-          ${o.tpsl.sl ? `<span class="tpsl-item"><span class="tpsl-key">SL</span><span class="tpsl-count">(${o.tpsl.sl.count})</span><span class="tpsl-price">${o.tpsl.sl.price}</span></span>` : ""}
+          ${o.tpsl.tp ? `<span class="tpsl-item" data-tpsl="tp"><span class="tpsl-key">TP</span><span class="tpsl-count">(${o.tpsl.tp.count})</span><span class="tpsl-price">${o.tpsl.tp.price}</span>${tpslChev}</span>` : ""}
+          ${o.tpsl.sl ? `<span class="tpsl-item" data-tpsl="sl"><span class="tpsl-key">SL</span><span class="tpsl-count">(${o.tpsl.sl.count})</span><span class="tpsl-price">${o.tpsl.sl.price}</span>${tpslChev}</span>` : ""}
         </div>`;
       }
       footerBtns = `
@@ -1110,6 +1124,17 @@
         wrap.closest(".card").classList.add("menu-open");
         adjustBtn.classList.add("active");
       }
+      return;
+    }
+
+    // TP/SL row item click → navigate to TP or SL setting
+    const tpslItem = e.target.closest(".tpsl-item[data-tpsl]");
+    if (tpslItem) {
+      e.stopPropagation();
+      const type = tpslItem.dataset.tpsl;
+      const card = tpslItem.closest(".card");
+      const symbol = card.querySelector(".card-symbol")?.textContent || "";
+      console.log(`Navigate to ${type.toUpperCase()} settings for ${symbol}`);
       return;
     }
 
